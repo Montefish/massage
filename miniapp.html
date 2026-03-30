@@ -496,7 +496,12 @@
     document.querySelectorAll('.cal-d').forEach(function(d){ d.classList.remove('sel'); });
     el.classList.add('sel');
     st.dayLabel = day + ' ' + MONTHS_GEN[viewMonth] + ' ' + viewYear;
-    st.day = day + ' ' + MONTHS_GEN[viewMonth];
+    // Для отображения — человекочитаемый формат
+    st.dayDisplay = day + ' ' + MONTHS_GEN[viewMonth];
+    // Для передачи в бот — формат ДД.ММ.ГГГГ чтобы совпадало с таблицей
+    var m = String(viewMonth + 1).padStart(2, '0');
+    var d = String(day).padStart(2, '0');
+    st.day = d + '.' + m + '.' + viewYear;
 
     var daySlots = getSlotsForDate(day, viewMonth, viewYear);
     renderSlots(daySlots);
@@ -545,7 +550,7 @@
 
     if (n === 2) {
       document.getElementById('cv-service').textContent = st.service;
-      document.getElementById('cv-date').textContent = st.day;
+      document.getElementById('cv-date').textContent = st.dayDisplay;
       document.getElementById('cv-time').textContent = st.time;
       document.getElementById('cv-dur').textContent = st.dur;
       document.getElementById('cv-price').textContent = st.price;
@@ -557,7 +562,7 @@
   function confirm() {
     var payload = JSON.stringify({
       service: st.service,
-      date: st.day,
+      date: st.day,        // ДД.ММ.ГГГГ — для сравнения с таблицей
       time: st.time,
       duration: st.dur,
       price: st.price
@@ -571,7 +576,7 @@
     try {
       tg.sendData(payload);
       document.getElementById('success-text').textContent =
-        'Ждём вас ' + st.day + ' в ' + st.time + '.\n\nНапоминание придёт за день до визита.';
+        'Ждём вас ' + st.dayDisplay + ' в ' + st.time + '.\n\nНапоминание придёт за день до визита.';
       goTo(3);
     } catch(e) {
       alert('Ошибка отправки: ' + e.message);
