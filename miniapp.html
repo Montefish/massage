@@ -568,11 +568,6 @@
       return;
     }
 
-    if (!tg.initData || tg.initData === '') {
-      alert('Ошибка: приложение открыто не через бота. Нажмите кнопку "📅 Записаться" в чате.');
-      return;
-    }
-
     try {
       tg.sendData(payload);
       document.getElementById('success-text').textContent =
