@@ -299,6 +299,20 @@
   var tg = window.Telegram && window.Telegram.WebApp;
   if (tg) { tg.ready(); tg.expand(); }
 
+  // Применяем цвета темы Telegram через JS (CSS-переменные не работают в iframe)
+  function applyTheme() {
+    if (!tg || !tg.themeParams) return;
+    var p = tg.themeParams;
+    var r = document.documentElement;
+    if (p.bg_color)           r.style.setProperty('--bg',           p.bg_color);
+    if (p.secondary_bg_color) r.style.setProperty('--bg-secondary', p.secondary_bg_color);
+    if (p.text_color)         r.style.setProperty('--text',         p.text_color);
+    if (p.hint_color)         r.style.setProperty('--text-hint',    p.hint_color);
+    if (p.button_color)       r.style.setProperty('--accent',       p.button_color);
+  }
+  applyTheme();
+  if (tg) tg.onEvent('themeChanged', applyTheme);
+
   // ─── Конфиг ────────────────────────────────────────────────────
   // ВАЖНО: замените на реальный ID вашей Google Таблицы
   // и убедитесь что лист "Расписание" открыт для просмотра (Файл → Настройки доступа → Все кто знают ссылку → Читатель)
