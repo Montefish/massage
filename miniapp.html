@@ -317,7 +317,7 @@
   // ВАЖНО: замените на реальный ID вашей Google Таблицы
   // и убедитесь что лист "Расписание" открыт для просмотра (Файл → Настройки доступа → Все кто знают ссылку → Читатель)
   var SHEET_ID = new URLSearchParams(window.location.search).get('sheet_id')
-                 || '1BdXCqSQ5yBx-oWbt2QE9BGfUuU1aLRt6Uo_iFX6KQmU';
+                 || 'ВАШ_SHEET_ID_ЗДЕСЬ';
   var SHEET_NAME = 'Расписание';
 
   // ─── Состояние ─────────────────────────────────────────────────
@@ -555,18 +555,32 @@
 
   // ─── Подтверждение записи ──────────────────────────────────────
   function confirm() {
-    if (tg) {
-      tg.sendData(JSON.stringify({
-        service: st.service,
-        date: st.day,
-        time: st.time,
-        duration: st.dur,
-        price: st.price
-      }));
+    var payload = JSON.stringify({
+      service: st.service,
+      date: st.day,
+      time: st.time,
+      duration: st.dur,
+      price: st.price
+    });
+
+    if (!tg) {
+      alert('Ошибка: Telegram WebApp недоступен. Откройте через бота.');
+      return;
     }
-    document.getElementById('success-text').textContent =
-      'Ждём вас ' + st.day + ' в ' + st.time + '.\n\nНапоминание придёт за день до визита.';
-    goTo(3);
+
+    if (!tg.initData || tg.initData === '') {
+      alert('Ошибка: приложение открыто не через бота. Нажмите кнопку "📅 Записаться" в чате.');
+      return;
+    }
+
+    try {
+      tg.sendData(payload);
+      document.getElementById('success-text').textContent =
+        'Ждём вас ' + st.day + ' в ' + st.time + '.\n\nНапоминание придёт за день до визита.';
+      goTo(3);
+    } catch(e) {
+      alert('Ошибка отправки: ' + e.message);
+    }
   }
 </script>
 </body>
