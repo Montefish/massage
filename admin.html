@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Админ — Наталия</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent:       #1D9E75;
+    --accent-dark:  #0F6E56;
+    --accent-light: rgba(29, 158, 117, 0.12);
+    --danger:       #E53E3E;
+    --danger-light: rgba(229, 62, 62, 0.10);
+    --warn:         #D97706;
+    --warn-light:   rgba(217, 119, 6, 0.10);
+    --bg:           var(--tg-theme-bg-color, #ffffff);
+    --bg2:          var(--tg-theme-secondary-bg-color, #f4f4f5);
+    --text:         var(--tg-theme-text-color, #111111);
+    --hint:         var(--tg-theme-hint-color, #888888);
+    --border:       rgba(128,128,128,0.18);
+    --divider:      rgba(128,128,128,0.10);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 70px;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--accent-dark);
+    padding: 16px 16px 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #fff; font-weight: 600; flex-shrink: 0;
+  }
+  .header-title { font-size: 16px; font-weight: 600; color: #fff; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+
+  /* ── Bottom tabs ── */
+  .tabs {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+  }
+  .tab {
+    flex: 1; padding: 8px 4px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; color: var(--hint); font-size: 10px;
+    transition: color .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab.active { color: var(--accent); }
+  .tab svg { width: 22px; height: 22px; }
+
+  /* ── Page ── */
+  .page { display: none; padding: 0 0 8px; }
+  .page.active { display: block; }
+
+  /* ── Section label ── */
+  .slabel {
+    font-size: 11px; color: var(--hint); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em;
+    padding: 16px 16px 8px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2); border-radius: 14px;
+    border: 1px solid var(--border);
+    margin: 0 12px 10px; overflow: hidden;
+  }
+
+  /* ── Booking card ── */
+  .booking {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--divider);
+    position: relative;
+  }
+  .booking:last-child { border-bottom: none; }
+  .booking-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .booking-name { font-size: 15px; font-weight: 600; color: var(--text); }
+  .booking-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 20px;
+    font-weight: 600; flex-shrink: 0;
+  }
+  .badge-ok   { background: var(--accent-light); color: var(--accent-dark); }
+  .badge-cancel { background: var(--danger-light); color: var(--danger); }
+  .booking-service { font-size: 13px; color: var(--hint); margin-top: 3px; }
+  .booking-meta {
+    display: flex; gap: 12px; margin-top: 8px;
+    font-size: 13px; align-items: center;
+  }
+  .booking-meta span { display: flex; align-items: center; gap: 4px; color: var(--text); }
+  .booking-actions { margin-top: 10px; display: flex; gap: 8px; }
+  .btn-sm {
+    font-size: 12px; padding: 6px 14px; border-radius: 10px;
+    border: none; cursor: pointer; font-weight: 500;
+    transition: opacity .15s;
+  }
+  .btn-sm:active { opacity: .75; }
+  .btn-cancel { background: var(--danger-light); color: var(--danger); }
+  .btn-cancel:disabled { opacity: .4; cursor: default; }
+
+  /* ── Filter chips ── */
+  .chips { display: flex; gap: 8px; padding: 0 12px 12px; overflow-x: auto; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; font-size: 12px; padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--bg2);
+    cursor: pointer; color: var(--hint); font-weight: 500;
+    transition: all .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Schedule slot ── */
+  .slot-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid var(--divider);
+  }
+  .slot-item:last-child { border-bottom: none; }
+  .slot-left { display: flex; align-items: center; gap: 10px; }
+  .slot-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-free { background: var(--accent); }
+  .dot-busy { background: var(--danger); }
+  .slot-datetime { font-size: 14px; font-weight: 500; color: var(--text); }
+  .slot-status { font-size: 12px; margin-top: 2px; }
+  .status-free { color: var(--accent); }
+  .status-busy { color: var(--danger); }
+  .btn-icon {
+    width: 32px; height: 32px; border-radius: 10px; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-del { background: var(--danger-light); color: var(--danger); }
+  .btn-restore { background: var(--accent-light); color: var(--accent); }
+
+  /* ── Add slot form ── */
+  .add-slot-form {
+    margin: 0 12px 12px;
+    background: var(--bg2); border-radius: 14px;
+    border: 1px solid var(--border); padding: 14px;
+  }
+  .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .form-field { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .form-field label { font-size: 11px; color: var(--hint); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .form-field input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 12px; font-size: 14px; color: var(--text);
+    width: 100%; outline: none;
+    -webkit-appearance: none;
+  }
+  .form-field input:focus { border-color: var(--accent); }
+  .btn-add {
+    width: 100%; padding: 11px; border-radius: 12px;
+    background: var(--accent); color: #fff; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-add:active { opacity: .8; }
+  .btn-add:disabled { background: var(--border); cursor: default; }
+
+  /* ── Client card ── */
+  .client-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; border-bottom: 1px solid var(--divider);
+  }
+  .client-item:last-child { border-bottom: none; }
+  .client-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent-dark);
+    font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .client-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .client-meta { font-size: 12px; color: var(--hint); margin-top: 2px; }
+  .client-status {
+    margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px;
+    font-weight: 600; flex-shrink: 0;
+  }
+  .st-new  { background: var(--bg); border: 1px solid var(--border); color: var(--hint); }
+  .st-reg  { background: var(--accent-light); color: var(--accent-dark); }
+  .st-vip  { background: #FEF3C7; color: #92400E; }
+
+  /* ── Stats row ── */
+  .stats {
+    display: flex; gap: 10px; padding: 12px 12px 4px;
+  }
+  .stat-card {
+    flex: 1; background: var(--bg2); border-radius: 14px;
+    border: 1px solid var(--border); padding: 12px 10px; text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-lbl { font-size: 11px; color: var(--hint); margin-top: 3px; }
+
+  /* ── Loader ── */
+  .loader-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 48px 16px; gap: 12px;
+  }
+  .loader {
+    width: 26px; height: 26px; border: 3px solid var(--accent-light);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { font-size: 13px; color: var(--hint); }
+
+  /* ── Empty ── */
+  .empty {
+    text-align: center; padding: 40px 24px;
+    font-size: 14px; color: var(--hint); line-height: 1.6;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #222; color: #fff; font-size: 13px; padding: 9px 18px;
+    border-radius: 20px; z-index: 999; opacity: 0;
+    transition: all .25s; pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Modal confirm ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg); border-radius: 20px 20px 0 0;
+    padding: 20px 20px 32px; width: 100%; max-width: 480px;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .modal-text { font-size: 14px; color: var(--hint); line-height: 1.6; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions button {
+    flex: 1; padding: 13px; border-radius: 14px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn-modal-cancel { background: var(--bg2); color: var(--text); }
+  .btn-modal-confirm { background: var(--danger); color: #fff; }
+
+  .date-group-label {
+    font-size: 12px; font-weight: 600; color: var(--hint);
+    padding: 12px 16px 6px; text-transform: uppercase; letter-spacing: .04em;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-avatar">Н</div>
+  <div>
+    <div class="header-title">Панель управления</div>
+    <div class="header-sub">Наталия · Массаж</div>
+  </div>
+</div>
+
+<!-- ══ TAB: Записи ══ -->
+<div class="page active" id="tab-bookings">
+  <div class="slabel" style="padding-bottom:4px">Фильтр</div>
+  <div class="chips">
+    <div class="chip active" onclick="filterBookings('all', this)">Все</div>
+    <div class="chip" onclick="filterBookings('today', this)">Сегодня</div>
+    <div class="chip" onclick="filterBookings('upcoming', this)">Предстоящие</div>
+    <div class="chip" onclick="filterBookings('confirmed', this)">Подтверждённые</div>
+    <div class="chip" onclick="filterBookings('cancelled', this)">Отменённые</div>
+  </div>
+  <div id="bookings-loader" class="loader-wrap">
+    <div class="loader"></div>
+    <div class="loader-text">Загрузка записей…</div>
+  </div>
+  <div id="bookings-list"></div>
+</div>
+
+<!-- ══ TAB: Расписание ══ -->
+<div class="page" id="tab-schedule">
+  <div class="slabel">Добавить слот</div>
+  <div class="add-slot-form">
+    <div class="form-row">
+      <div class="form-field">
+        <label>Дата</label>
+        <input type="date" id="in-date">
+      </div>
+      <div class="form-field">
+        <label>Время</label>
+        <input type="time" id="in-time">
+      </div>
+    </div>
+    <button class="btn-add" onclick="addSlot()">+ Добавить слот</button>
+  </div>
+
+  <div class="slabel">Слоты в расписании</div>
+  <div id="schedule-loader" class="loader-wrap" style="display:none">
+    <div class="loader"></div>
+    <div class="loader-text">Загрузка…</div>
+  </div>
+  <div id="schedule-list"></div>
+</div>
+
+<!-- ══ TAB: Клиенты ══ -->
+<div class="page" id="tab-clients">
+  <div id="stats-row" class="stats"></div>
+  <div class="slabel">Клиенты</div>
+  <div id="clients-loader" class="loader-wrap">
+    <div class="loader"></div>
+    <div class="loader-text">Загрузка…</div>
+  </div>
+  <div id="clients-list"></div>
+</div>
+
+<!-- ══ Bottom Tabs ══ -->
+<div class="tabs">
+  <div class="tab active" id="t-bookings" onclick="switchTab('bookings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/>
+      <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+    </svg>
+    Записи
+  </div>
+  <div class="tab" id="t-schedule" onclick="switchTab('schedule')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>
+    </svg>
+    Расписание
+  </div>
+  <div class="tab" id="t-clients" onclick="switchTab('clients')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/>
+    </svg>
+    Клиенты
+  </div>
+</div>
+
+<!-- ══ Confirm modal ══ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Отменить запись?</div>
+    <div class="modal-text" id="modal-text"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeModal()">Нет</button>
+      <button class="btn-modal-confirm" id="modal-confirm-btn">Да, отменить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  function applyTheme() {
+    if (!tg || !tg.themeParams) return;
+    var p = tg.themeParams, r = document.documentElement;
+    if (p.bg_color)           r.style.setProperty('--bg',   p.bg_color);
+    if (p.secondary_bg_color) r.style.setProperty('--bg2',  p.secondary_bg_color);
+    if (p.text_color)         r.style.setProperty('--text', p.text_color);
+    if (p.hint_color)         r.style.setProperty('--hint', p.hint_color);
+  }
+  applyTheme();
+  if (tg) tg.onEvent('themeChanged', applyTheme);
+
+  // ── Config ──────────────────────────────────────────────────────
+  // Замените на свой SHEET_ID и URL бэкенда
+  var params   = new URLSearchParams(window.location.search);
+  var SHEET_ID = params.get('sheet_id') || 'YOUR_SHEET_ID';
+  var API_URL  = params.get('api') || 'https://YOUR_BOT_BACKEND/admin';
+  // API_URL — это URL вашего бота (webhook или отдельный HTTP-эндпоинт)
+  // Если бот на polling — см. README ниже как добавить /admin endpoint
+
+  // ── State ───────────────────────────────────────────────────────
+  var allBookings  = [];
+  var allSchedule  = [];
+  var allClients   = [];
+  var currentFilter = 'all';
+  var activeTab    = 'bookings';
+
+  // ── Tab switching ────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    document.getElementById('t-' + name).classList.add('active');
+    activeTab = name;
+    if (name === 'bookings'  && allBookings.length === 0)  loadBookings();
+    if (name === 'schedule'  && allSchedule.length === 0)  loadSchedule();
+    if (name === 'clients'   && allClients.length === 0)   loadClients();
+  }
+
+  // ── CSV helpers ─────────────────────────────────────────────────
+  function csvURL(sheetName) {
+    return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+         + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(sheetName);
+  }
+
+  function parseCSV(csv) {
+    var lines = csv.trim().split('\n');
+    if (lines.length < 2) return [];
+    var headers = parseCSVLine(lines[0]).map(function(h){ return h.trim().replace(/"/g,''); });
+    var rows = [];
+    for (var i = 1; i < lines.length; i++) {
+      var cols = parseCSVLine(lines[i]);
+      if (cols.length < 2) continue;
+      var obj = {};
+      headers.forEach(function(h, idx){ obj[h] = (cols[idx] || '').trim().replace(/"/g,''); });
+      rows.push(obj);
+    }
+    return rows;
+  }
+
+  function parseCSVLine(line) {
+    var result = [], cur = '', inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function parseDate(str) {
+    // DD.MM.YYYY
+    var p = str.split('.');
+    if (p.length !== 3) return null;
+    return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+  }
+
+  function today() {
+    var d = new Date(); d.setHours(0,0,0,0); return d;
+  }
+
+  function formatDateRu(str) {
+    var d = parseDate(str);
+    if (!d) return str;
+    var MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    return d.getDate() + ' ' + MONTHS[d.getMonth()];
+  }
+
+  function isToday(str) {
+    var d = parseDate(str); if (!d) return false;
+    var t = today();
+    return d.getTime() === t.getTime();
+  }
+
+  // ── BOOKINGS ─────────────────────────────────────────────────────
+  function loadBookings() {
+    fetch(csvURL('Записи'))
+      .then(function(r){ return r.text(); })
+      .then(function(csv){
+        allBookings = parseCSV(csv).reverse(); // свежие первые
+        document.getElementById('bookings-loader').style.display = 'none';
+        renderBookings();
+      })
+      .catch(function(){
+        document.getElementById('bookings-loader').innerHTML =
+          '<div class="empty">Не удалось загрузить записи.<br>Проверьте доступ к таблице.</div>';
+      });
+  }
+
+  function filterBookings(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    renderBookings();
+  }
+
+  function renderBookings() {
+    var t = today();
+    var filtered = allBookings.filter(function(b) {
+      if (currentFilter === 'today')     return isToday(b['дата']);
+      if (currentFilter === 'upcoming') {
+        var d = parseDate(b['дата']);
+        return d && d >= t && b['статус_записи'] === 'подтверждено';
+      }
+      if (currentFilter === 'confirmed') return b['статус_записи'] === 'подтверждено';
+      if (currentFilter === 'cancelled') return b['статус_записи'] === 'отменено';
+      return true;
+    });
+
+    var list = document.getElementById('bookings-list');
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty">Записей нет</div>';
+      return;
+    }
+
+    // Группируем по дате
+    var groups = {};
+    filtered.forEach(function(b){
+      var k = b['дата'] || 'Без даты';
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(b);
+    });
+
+    var html = '';
+    Object.keys(groups).sort(function(a,b){
+      var da = parseDate(a), db = parseDate(b);
+      if (!da || !db) return 0;
+      return db - da; // свежие сверху
+    }).forEach(function(date){
+      var label = isToday(date) ? '📅 Сегодня · ' + date : formatDateRu(date) + ' · ' + date;
+      html += '<div class="date-group-label">' + label + '</div><div class="card">';
+      groups[date].forEach(function(b){
+        var isCancelled = b['статус_записи'] === 'отменено';
+        var badge = isCancelled
+          ? '<span class="booking-badge badge-cancel">отменено</span>'
+          : '<span class="booking-badge badge-ok">✓ подтверждено</span>';
+        html += '<div class="booking">'
+          + '<div class="booking-top">'
+          + '<div class="booking-name">' + esc(b['имя_клиента'] || '—') + '</div>'
+          + badge
+          + '</div>'
+          + '<div class="booking-service">' + esc(b['услуга'] || '') + '</div>'
+          + '<div class="booking-meta">'
+          + '<span>🕐 ' + esc(b['время'] || '') + '</span>'
+          + '<span>💰 ' + esc(b['стоимость'] || '') + ' дин.</span>'
+          + '</div>'
+          + (isCancelled ? '' :
+            '<div class="booking-actions">'
+            + '<button class="btn-sm btn-cancel" onclick="confirmCancel(\'' + esc(b['дата']) + '\',\'' + esc(b['время']) + '\',\'' + esc(b['имя_клиента']) + '\',\'' + esc(b['услуга']) + '\')">Отменить</button>'
+            + '</div>')
+          + '</div>';
+      });
+      html += '</div>';
+    });
+
+    list.innerHTML = html;
+  }
+
+  // ── SCHEDULE ──────────────────────────────────────────────────────
+  function loadSchedule() {
+    document.getElementById('schedule-loader').style.display = 'flex';
+    fetch(csvURL('Расписание'))
+      .then(function(r){ return r.text(); })
+      .then(function(csv){
+        allSchedule = parseCSV(csv);
+        document.getElementById('schedule-loader').style.display = 'none';
+        renderSchedule();
+      })
+      .catch(function(){
+        document.getElementById('schedule-loader').innerHTML =
+          '<div class="empty">Не удалось загрузить расписание.</div>';
+      });
+  }
+
+  function renderSchedule() {
+    var t = today();
+    // Показываем только будущие + сегодня, сортируем по дате
+    var slots = allSchedule.filter(function(s){
+      var d = parseDate(s['дата']); return d && d >= t;
+    }).sort(function(a,b){
+      var da = parseDate(a['дата']), db = parseDate(b['дата']);
+      if (da - db !== 0) return da - db;
+      return (a['время'] || '').localeCompare(b['время'] || '');
+    });
+
+    var list = document.getElementById('schedule-list');
+    if (slots.length === 0) {
+      list.innerHTML = '<div class="empty">Нет предстоящих слотов</div>'; return;
+    }
+
+    // Группируем по дате
+    var groups = {};
+    slots.forEach(function(s){
+      var k = s['дата']; if (!groups[k]) groups[k] = []; groups[k].push(s);
+    });
+
+    var html = '';
+    Object.keys(groups).sort(function(a,b){
+      return parseDate(a) - parseDate(b);
+    }).forEach(function(date){
+      var label = isToday(date) ? '📅 Сегодня' : formatDateRu(date) + ' · ' + date;
+      html += '<div class="date-group-label">' + label + '</div><div class="card">';
+      groups[date].forEach(function(s){
+        var free = s['статус'] === 'свободно';
+        html += '<div class="slot-item">'
+          + '<div class="slot-left">'
+          + '<div class="slot-dot ' + (free ? 'dot-free' : 'dot-busy') + '"></div>'
+          + '<div>'
+          + '<div class="slot-datetime">' + esc(s['время'] || '') + '</div>'
+          + '<div class="slot-status ' + (free ? 'status-free' : 'status-busy') + '">'
+          + (free ? 'свободно' : 'занято') + '</div>'
+          + '</div></div>'
+          + (free
+            ? '<button class="btn-icon btn-del" title="Закрыть слот" onclick="closeSlot(\'' + esc(s['дата']) + '\',\'' + esc(s['время']) + '\')">'
+              + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>'
+              + '</button>'
+            : '<button class="btn-icon btn-restore" title="Освободить слот" onclick="restoreSlot(\'' + esc(s['дата']) + '\',\'' + esc(s['время']) + '\')">'
+              + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>'
+              + '</button>')
+          + '</div>';
+      });
+      html += '</div>';
+    });
+
+    list.innerHTML = html;
+  }
+
+  // ── CLIENTS ───────────────────────────────────────────────────────
+  function loadClients() {
+    fetch(csvURL('Клиенты'))
+      .then(function(r){ return r.text(); })
+      .then(function(csv){
+        allClients = parseCSV(csv);
+        document.getElementById('clients-loader').style.display = 'none';
+        renderClients();
+      })
+      .catch(function(){
+        document.getElementById('clients-loader').innerHTML =
+          '<div class="empty">Не удалось загрузить клиентов.</div>';
+      });
+  }
+
+  function renderClients() {
+    // Stats
+    var total = allClients.length;
+    var vip   = allClients.filter(function(c){ return c['статус']==='vip'; }).length;
+    var reg   = allClients.filter(function(c){ return c['статус']==='постоянный'; }).length;
+    document.getElementById('stats-row').innerHTML =
+      stat(total, 'Всего') + stat(reg, 'Постоянных') + stat(vip, 'VIP');
+
+    var html = '<div class="card">';
+    if (allClients.length === 0) {
+      html += '<div class="empty">Клиентов пока нет</div>';
+    } else {
+      allClients.slice().reverse().forEach(function(c){
+        var name  = c['имя'] || '—';
+        var init  = name.charAt(0).toUpperCase();
+        var st    = c['статус'] || 'новый';
+        var stCls = st === 'vip' ? 'st-vip' : st === 'постоянный' ? 'st-reg' : 'st-new';
+        html += '<div class="client-item">'
+          + '<div class="client-avatar">' + init + '</div>'
+          + '<div>'
+          + '<div class="client-name">' + esc(name) + '</div>'
+          + '<div class="client-meta">визитов: ' + (c['визитов'] || 0) + (c['username'] ? ' · @' + esc(c['username']) : '') + '</div>'
+          + '</div>'
+          + '<div class="client-status ' + stCls + '">' + esc(st) + '</div>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+    document.getElementById('clients-list').innerHTML = html;
+  }
+
+  function stat(n, label) {
+    return '<div class="stat-card"><div class="stat-num">' + n + '</div><div class="stat-lbl">' + label + '</div></div>';
+  }
+
+  // ── ACTIONS via bot API ───────────────────────────────────────────
+  // Все действия (отмена, добавление слота, закрытие) отправляются
+  // на API_URL вашего бота как POST-запросы.
+
+  function callBot(action, payload, onSuccess) {
+    var adminId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
+                  ? tg.initDataUnsafe.user.id : 0;
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ action: action, admin_id: adminId }, payload))
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.ok) { onSuccess(data); }
+      else { showToast('❌ ' + (data.error || 'Ошибка')); }
+    })
+    .catch(function(){ showToast('❌ Нет связи с сервером'); });
+  }
+
+  // Отмена записи
+  var pendingCancel = null;
+  function confirmCancel(date, time, name, service) {
+    pendingCancel = { date: date, time: time };
+    document.getElementById('modal-text').textContent =
+      name + ' · ' + service + '\n' + date + ' в ' + time + '\n\nКлиент получит уведомление об отмене.';
+    document.getElementById('modal-confirm-btn').onclick = doCancel;
+    document.getElementById('modal').classList.add('open');
+  }
+  function doCancel() {
+    closeModal();
+    if (!pendingCancel) return;
+    callBot('cancel', pendingCancel, function(){
+      showToast('✅ Запись отменена, клиент уведомлён');
+      allBookings = []; allSchedule = [];
+      loadBookings(); loadSchedule();
+    });
+  }
+
+  // Закрыть слот (свободно → занято)
+  function closeSlot(date, time) {
+    callBot('close_slot', { date: date, time: time }, function(){
+      showToast('Слот закрыт');
+      allSchedule = []; loadSchedule();
+    });
+  }
+
+  // Освободить слот (занято → свободно)
+  function restoreSlot(date, time) {
+    callBot('restore_slot', { date: date, time: time }, function(){
+      showToast('Слот открыт');
+      allSchedule = []; loadSchedule();
+    });
+  }
+
+  // Добавить слот
+  function addSlot() {
+    var dateInput = document.getElementById('in-date').value;
+    var timeInput = document.getElementById('in-time').value;
+    if (!dateInput || !timeInput) { showToast('Укажите дату и время'); return; }
+    // Конвертируем из YYYY-MM-DD в DD.MM.YYYY
+    var p = dateInput.split('-');
+    var date = p[2] + '.' + p[1] + '.' + p[0];
+    callBot('add_slot', { date: date, time: timeInput }, function(){
+      showToast('✅ Слот добавлен: ' + date + ' ' + timeInput);
+      document.getElementById('in-date').value = '';
+      document.getElementById('in-time').value = '';
+      allSchedule = []; loadSchedule();
+    });
+  }
+
+  // ── Modal ──────────────────────────────────────────────────────────
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+  document.getElementById('modal').addEventListener('click', function(e){
+    if (e.target === this) closeModal();
+  });
+
+  // ── Toast ──────────────────────────────────────────────────────────
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2800);
+  }
+
+  // ── Escape ─────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────
+  loadBookings();
+</script>
+</body>
+</html>
