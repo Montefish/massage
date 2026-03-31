@@ -679,7 +679,10 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(Object.assign({ action: action, admin_id: adminId }, payload))
     })
-    .then(function(r){ return r.json(); })
+    .then(function(r){ 
+      if (!r.ok && r.status !== 200) throw new Error('HTTP ' + r.status);
+      return r.json(); 
+    })
     .then(function(data){
       if (data.ok) { onSuccess(data); }
       else { showToast('❌ ' + (data.error || 'Ошибка')); }
