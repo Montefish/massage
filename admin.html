@@ -383,10 +383,8 @@
   // ── Config ──────────────────────────────────────────────────────
   // Замените на свой SHEET_ID и URL бэкенда
   var params   = new URLSearchParams(window.location.search);
-  var SHEET_ID = params.get('sheet_id') || '1BdXCqSQ5yBx-oWbt2QE9BGfUuU1aLRt6Uo_iFX6KQmU';
-  var API_URL  = params.get('api') || 'https://admin-bot-production-c117.up.railway.app/admin';
-  // API_URL — это URL вашего бота (webhook или отдельный HTTP-эндпоинт)
-  // Если бот на polling — см. README ниже как добавить /admin endpoint
+  var SHEET_ID = params.get('sheet_id') || 'YOUR_SHEET_ID';
+  // Команды отправляются боту через tg.sendData() — никаких внешних запросов
 
   // ── State ───────────────────────────────────────────────────────
   var allBookings  = [];
@@ -667,27 +665,20 @@
     return '<div class="stat-card"><div class="stat-num">' + n + '</div><div class="stat-lbl">' + label + '</div></div>';
   }
 
-  // ── ACTIONS via bot API ───────────────────────────────────────────
-  // Все действия (отмена, добавление слота, закрытие) отправляются
-  // на API_URL вашего бота как POST-запросы.
+  // ── ACTIONS via tg.sendData() ─────────────────────────────────────────────
+  // Миниаппа отправляет команду боту через sendData.
+  // Бот обрабатывает её и отвечает сообщением в чате.
+  // ВАЖНО: sendData закрывает миниаппу — это нормальное поведение Telegram.
 
   function callBot(action, payload, onSuccess) {
-    var adminId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user
-                  ? tg.initDataUnsafe.user.id : 0;
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(Object.assign({ action: action, admin_id: adminId }, payload))
-    })
-    .then(function(r){ 
-      if (!r.ok && r.status !== 200) throw new Error('HTTP ' + r.status);
-      return r.json(); 
-    })
-    .then(function(data){
-      if (data.ok) { onSuccess(data); }
-      else { showToast('❌ ' + (data.error || 'Ошибка')); }
-    })
-    .catch(function(){ showToast('❌ Нет связи с сервером'); });
+    if (!tg) { showToast('❌ Telegram недоступен'); return; }
+    var data = JSON.stringify(Object.assign({ action: action }, payload));
+    try {
+      tg.sendData(data);
+      onSuccess && onSuccess({});
+    } catch(e) {
+      showToast('❌ Ошибка: ' + e.message);
+    }
   }
 
   // Отмена записи
