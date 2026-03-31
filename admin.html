@@ -674,8 +674,8 @@
     if (!tg) { showToast('❌ Telegram недоступен'); return; }
     var data = JSON.stringify(Object.assign({ action: action }, payload));
     try {
-      tg.sendData(data);
-      onSuccess && onSuccess({});
+     onSuccess && onSuccess({}); 
+     tg.sendData(data);      
     } catch(e) {
       showToast('❌ Ошибка: ' + e.message);
     }
